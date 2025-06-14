@@ -97,7 +97,7 @@ fun HomeUI() {
                     Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxHeight()) {
                         Button(
                             onClick = {
-                                context.authorize()
+                                context.login(FollowActivity.createPendingIntent(context))
                             },
                             // modifier = Modifier.padding(bottom = 60.dp),
                             colors = LoopTheme.current.buttonColors

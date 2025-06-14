@@ -1,5 +1,6 @@
 package org.tidepool.carepartner
 
+import android.app.PendingIntent
 import android.app.job.JobInfo
 import android.app.job.JobParameters
 import android.app.job.JobScheduler
@@ -18,16 +19,58 @@ private const val PERIOD_MILLIS = 5_000L
 class ReauthService : JobService() {
 
     companion object {
-        fun start(context: Context, jobId: Int) {
+        private lateinit var loginActivity: PendingIntent
+
+        /**
+         * Starts the service.
+         *
+         * @param context The Context in which this PendingIntent should start
+         * the activity.
+         * @param jobId Application-provided id for the job. This ID must be unique across
+         * all clients of the same uid (not just the same package).  You will want to make sure
+         * this is a stable ID across app updates, so probably not based on a resource ID.
+         * @param postLoginActivity Activity to start once the user is authorized.
+         * @param loginActivity Activity to start to allow the user to login.
+         */
+        fun start(context: Context, jobId: Int, postLoginActivity: PendingIntent, loginActivity: PendingIntent) {
+            this.loginActivity = loginActivity
             schedule(context, jobId)
+
+            if (PersistentData.hasRefreshToken) {
+                sendRefreshAccessTokenRequestIfNeeded(context) { ex ->
+                    if (ex != null) {
+                        Log.w(TAG, ex)
+                    } else {
+                        // We either had a valid token, or we just created one.
+                        postLoginActivity.send()
+                    }
+                }
+            }
+        }
+
+        /**
+         * Directs the user to login.
+         *
+         * @param context The Context in which this PendingIntent should start
+         * the activity.
+         * @param postLoginActivity Activity to start once the user is authorized.
+         */
+        fun login(context: Context, postLoginActivity: PendingIntent) {
+            AuthorizationService(context).performAuthorizationRequest(
+                PersistentData.getAuthRequestBuilder().build(),
+                AuthActivity.createPendingIntent(context, postLoginActivity),
+                loginActivity)
         }
     }
 
-    private lateinit var params: JobParameters
-
-    override fun onStartJob(params: JobParameters?): Boolean {
+    override fun onStartJob(params: JobParameters): Boolean {
         Log.v(TAG, "Starting")
-        this.params = params!!
+
+        if (!PersistentData.hasRefreshToken) {
+            Log.w(TAG, "No fresh token; cannot refresh access token")
+            return false
+        }
+
         sendRefreshAccessTokenRequestIfNeeded(this) { ex ->
             if (ex != null) {
                 jobFinished(params, true)  // Request exponential retry
@@ -39,7 +82,7 @@ class ReauthService : JobService() {
         return true // The job is not done yet; we will call jobFinished() when it is.
     }
 
-    override fun onStopJob(params: JobParameters?): Boolean {
+    override fun onStopJob(params: JobParameters): Boolean {
         Log.v(TAG, "Stopping")
         return true
     }
@@ -48,7 +91,7 @@ class ReauthService : JobService() {
 class NoCredentialsException: RuntimeException("No Credentials")
 
 /** If there is an auth token refreshes the access token if it has expired. */
-fun sendRefreshAccessTokenRequestIfNeeded(context: Context, callback: (ex: Exception?) -> Unit) {
+private fun sendRefreshAccessTokenRequestIfNeeded(context: Context, callback: (ex: Exception?) -> Unit) {
     if (PersistentData.authState.refreshToken == null) {
         callback(NoCredentialsException())
     } else if (PersistentData.authState.needsTokenRefresh) {
@@ -71,4 +114,8 @@ private fun schedule(context: Context, jobId: Int) {
 
     val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
     jobScheduler.schedule(builder.build())
+}
+
+fun Context.login(postLoginActivity: PendingIntent) {
+    ReauthService.login(this, postLoginActivity)
 }

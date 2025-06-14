@@ -1,5 +1,6 @@
 package org.tidepool.carepartner
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.res.Configuration
 import androidx.annotation.StringRes
@@ -807,7 +808,7 @@ class FollowUI : DefaultLifecycleObserver {
             }
         )
     }
-    
+
     /**
      * The application to render. This is not in the callback so that if there is a method to
      * simulate communication with the backend, the entire app can be displayed with dummy data.
@@ -1215,7 +1216,7 @@ class FollowUI : DefaultLifecycleObserver {
         // if (value is FatalDataException) {
         //     future?.cancel(true)
         //     when (value) {
-        //         is TokenExpiredException -> retryAuthorize()
+        //         is TokenExpiredException -> retryAuthorize(FollowActivity.createPendingIntent(this))
         //         else                     -> logout()
         //     }
         // }
@@ -1236,9 +1237,9 @@ inline fun <T, R> T?.rememberKey(
     return remember(this) { this?.let { calculation(it) } ?: default }
 }
 
-fun Context.retryAuthorize() {
+fun Context.retryAuthorize(postLoginActivity: PendingIntent) {
     if (numRetries++ < MAX_RETRIES) {
-        authorize()
+        login(postLoginActivity)
     } else {
         logout()
     }
