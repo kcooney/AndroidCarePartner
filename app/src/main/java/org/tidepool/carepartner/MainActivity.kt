@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.util.Log
@@ -11,15 +12,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.withTimeout
-import net.openid.appauth.AuthorizationException
 import net.openid.appauth.AuthorizationService
 import org.tidepool.carepartner.backend.PersistentData
-import org.tidepool.carepartner.backend.PersistentData.Companion.NoAuthorizationException
-import org.tidepool.carepartner.backend.PersistentData.Companion.getAccessToken
 import org.tidepool.carepartner.backend.PersistentData.Companion.readFromDisk
-import kotlin.time.Duration.Companion.seconds
 
 private const val REAUTH_SERVICE_JOB_ID = 1
 
@@ -41,11 +36,16 @@ class MainActivity : ComponentActivity() {
                 if (PersistentData.hasRefreshToken) {
                     sendRefreshAccessTokenRequestIfNeeded(baseContext) { ex ->
                         if (ex != null) {
-                            Log.w(TAG, ex)
+                            when (ex) {
+                                is NoCredentialsException -> {}
+                                else -> Log.w(TAG, ex)
+                            }
                         } else {
                             // We either had a valid token, or we just created one.
                             baseContext.startActivity(
-                                Intent(baseContext, FollowActivity::class.java))
+                                Intent(baseContext, FollowActivity::class.java)
+                                    .addFlags(FLAG_ACTIVITY_NEW_TASK)
+                            )
                         }
                     }
                 }

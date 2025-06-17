@@ -45,11 +45,14 @@ class ReauthService : JobService() {
     }
 }
 
+class NoCredentialsException: RuntimeException("No Credentials")
+
 /** If there is an auth token refreshes the access token if it has expired. */
 fun sendRefreshAccessTokenRequestIfNeeded(context: Context, callback: (ex: Exception?) -> Unit) {
-    if (PersistentData.authState.needsTokenRefresh) {
+    if (PersistentData.authState.refreshToken == null) {
+        callback(NoCredentialsException())
+    } else if (PersistentData.authState.needsTokenRefresh) {
         Log.v(TAG, "Performing a token refresh to get a new access token")
-        Log.v(TAG, PersistentData.authState.jsonSerializeString())
         val request = PersistentData.authState.createTokenRefreshRequest()
         AuthorizationService(context).performTokenRequest(request) { resp, ex ->
             PersistentData.authState.update(resp, ex)

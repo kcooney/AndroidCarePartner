@@ -19,6 +19,8 @@ import androidx.lifecycle.viewmodel.MutableCreationExtras
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import net.openid.appauth.AuthorizationException
+import net.openid.appauth.AuthorizationResponse
 import org.tidepool.carepartner.backend.PersistentData.Companion.authState
 import org.tidepool.carepartner.backend.PersistentData.Companion.writeToDisk
 import org.tidepool.carepartner.backend.data.DataRepository
@@ -42,6 +44,11 @@ class FollowActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ui = FollowUI().apply { lifecycle.addObserver(this) }
+        val resp = AuthorizationResponse.fromIntent(intent)
+        val ex = AuthorizationException.fromIntent(intent)
+        if ((resp == null).xor(ex == null)) {
+            authState.update(resp, ex)
+        }
 
         @SuppressLint("SourceLockedOrientationActivity")
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
