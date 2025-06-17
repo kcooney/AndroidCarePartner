@@ -1,6 +1,9 @@
 package org.tidepool.carepartner
 
 import android.annotation.SuppressLint
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -37,6 +40,15 @@ import kotlin.time.Duration.Companion.seconds
 class FollowActivity : ComponentActivity() {
     companion object {
         const val TAG = "FollowActivity"
+
+        fun createPendingIntent(context: Context): PendingIntent {
+            return PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, FollowActivity::class.java),
+                PendingIntent.FLAG_MUTABLE
+            )
+        }
     }
     
     private lateinit var ui: FollowUI

@@ -1,6 +1,5 @@
 package org.tidepool.carepartner.backend
 
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -126,18 +125,8 @@ class PersistentData {
             endSessionRequest?.let {
                 authService.performEndSessionRequest(
                     it,
-                    PendingIntent.getActivity(
-                        this,
-                        0,
-                        Intent(this, MainActivity::class.java),
-                        PendingIntent.FLAG_IMMUTABLE
-                    ),
-                    PendingIntent.getActivity(
-                        this,
-                        0,
-                        Intent(this, FollowActivity::class.java),
-                        PendingIntent.FLAG_IMMUTABLE
-                    )
+                    MainActivity.createPendingIntent(this),
+                    FollowActivity.createPendingIntent(this)
                 )
             } ?: startActivity(Intent(this, MainActivity::class.java))
         }

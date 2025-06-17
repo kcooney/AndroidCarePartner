@@ -21,6 +21,17 @@ private const val REAUTH_SERVICE_JOB_ID = 1
 private var TAG = MainActivity::class.java.simpleName
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        fun createPendingIntent(context: Context): PendingIntent {
+            return PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, MainActivity::class.java),
+                PendingIntent.FLAG_MUTABLE
+            )
+        }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,17 +68,7 @@ class MainActivity : ComponentActivity() {
 fun Context.authorize() {
     AuthorizationService(this).performAuthorizationRequest(
         PersistentData.getAuthRequestBuilder().build(),
-        PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, FollowActivity::class.java),
-            PendingIntent.FLAG_MUTABLE
-        ),
-        PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_MUTABLE
-        )
+        FollowActivity.createPendingIntent(this),
+        MainActivity.createPendingIntent(this)
     )
 }
